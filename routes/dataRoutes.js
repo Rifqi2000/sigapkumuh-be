@@ -7,7 +7,7 @@ router.get('/', async (req, res) => {
   const { periode_data, wilayah, kecamatan, kelurahan } = req.query;
 
   try {
-    let baseQuery = 'SELECT * FROM sigapkumuh.data_sigapkumuh2 WHERE 1=1';
+    let baseQuery = 'SELECT * FROM sigapkumuh.data_dashboardsigap WHERE 1=1';
     const values = [];
 
     if (periode_data) {
