@@ -7,27 +7,27 @@ router.get('/', async (req, res) => {
   const { periode_data, wilayah, kecamatan, kelurahan } = req.query;
 
   try {
-    let baseQuery = 'SELECT * FROM sigapkumuh.data_tabular WHERE 1=1';
+    let baseQuery = 'SELECT * FROM sigapkumuh.data_dashboardsigap WHERE 1=1';
     const values = [];
 
     if (periode_data) {
       values.push(periode_data);
-      baseQuery += ` AND tahun = $${values.length}`;
+      baseQuery += ` AND periode_data = $${values.length}`;
     }
 
     if (wilayah) {
       values.push(wilayah);
-      baseQuery += ` AND nama_kabkota = $${values.length}`;
+      baseQuery += ` AND wilayah = $${values.length}`;
     }
 
     if (kecamatan) {
       values.push(kecamatan);
-      baseQuery += ` AND nama_kec = $${values.length}`;
+      baseQuery += ` AND kecamatan = $${values.length}`;
     }
 
     if (kelurahan) {
       values.push(kelurahan);
-      baseQuery += ` AND nama_kel = $${values.length}`;
+      baseQuery += ` AND kelurahan = $${values.length}`;
     }
 
     const result = await pool.query(baseQuery, values);
