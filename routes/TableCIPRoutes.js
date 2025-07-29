@@ -12,9 +12,9 @@ router.get('/table-cip', async (req, res) => {
         nama_kel,
         LPAD(RIGHT(nama_rw::text, 2), 2, '0') AS nama_rw,
         nama_kegiatan,
-        volume,
+        SUM(REPLACE(volume, ',', '.')::double precision) AS volume,
         satuan,
-        anggaran
+        SUM(anggaran::double precision) AS anggaran
       FROM sigapkumuh.data_cip_dev
       WHERE tahun = '2024'
         AND nama_kabkota IS NOT NULL
@@ -25,6 +25,7 @@ router.get('/table-cip', async (req, res) => {
         AND volume IS NOT NULL
         AND satuan IS NOT NULL
         AND anggaran IS NOT NULL
+      GROUP BY tahun, nama_kabkota, nama_kec, nama_kel, nama_rw, nama_kegiatan, satuan
       ORDER BY tahun DESC, nama_kabkota, nama_kec, nama_kel, nama_rw
     `;
 
