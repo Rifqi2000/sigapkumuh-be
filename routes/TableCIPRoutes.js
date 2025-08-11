@@ -3,24 +3,21 @@ const pool = require('../config/db');
 const router = express.Router();
 
 router.get('/table-cip', async (req, res) => {
-  const {
-    tahun,
-    wilayah,
-    kecamatan,
-    kelurahan,
-    rw
-  } = req.query;
+  const { tahun, wilayah, kecamatan, kelurahan, rw } = req.query;
 
   try {
     const filters = [];
     const values = [];
 
-    // Filter tahun default = 2024
-    filters.push(`tahun = $${values.length + 1}`);
-    values.push('2024');
+    // Filter tahun CIP, default 2024
+    filters.push(`tahun_cip = $${values.length + 1}`);
+    values.push(tahun || '2024');
+
+    // Hanya ambil nama_kab yang terisi
+    filters.push(`NULLIF(TRIM(nama_kab), '') IS NOT NULL`);
 
     if (wilayah && wilayah !== 'Semua') {
-      filters.push(`nama_kabkota = $${values.length + 1}`);
+      filters.push(`nama_kab = $${values.length + 1}`);
       values.push(wilayah);
     }
 
@@ -39,44 +36,31 @@ router.get('/table-cip', async (req, res) => {
       values.push(rw);
     }
 
-    const notNullConditions = `
-      nama_kabkota IS NOT NULL AND
-      nama_kec IS NOT NULL AND
-      nama_kel IS NOT NULL AND
-      nama_rw IS NOT NULL AND
-      nama_kegiatan IS NOT NULL AND
-      volume IS NOT NULL AND TRIM(volume::text) <> '' AND volume::text <> '0' AND
-      satuan IS NOT NULL AND satuan <> '' AND
-      anggaran IS NOT NULL AND TRIM(anggaran::text) <> '' AND anggaran::text <> '0'
-    `;
-
-    const whereClause =
-      filters.length > 0
-        ? `WHERE ${filters.join(' AND ')} AND ${notNullConditions}`
-        : `WHERE ${notNullConditions}`;
+    const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
 
     const query = `
       SELECT
-        tahun,
-        nama_kabkota,
+        tahun_cip AS tahun,
+        nama_kab AS nama_kabkota,
         nama_kec,
         nama_kel,
         nama_rw,
         nama_kegiatan,
-        ROUND(SUM(REPLACE(REPLACE(volume::text, '.', ''), ',', '.')::numeric), 2) AS volume,
+        tipe_bahan,
         satuan,
-        ROUND(SUM(REPLACE(REPLACE(REPLACE(anggaran::text, '.', ''), ',', '.'), ' ', '')::numeric), 2) AS anggaran
-      FROM sigapkumuh.data_cip_dev
+        ROUND(total_volume_cip::numeric, 2) AS volume,
+        total_kegiatan_cip,
+        ROUND(total_anggaran_cip::numeric, 2) AS anggaran
+      FROM sigapkumuh.stackedbar
       ${whereClause}
-      GROUP BY tahun, nama_kabkota, nama_kec, nama_kel, nama_rw, nama_kegiatan, satuan
-      ORDER BY nama_kabkota, nama_kec, nama_kel, nama_rw;
+      ORDER BY nama_kab, nama_kec, nama_kel, nama_rw;
     `;
 
     const result = await pool.query(query, values);
     res.json(result.rows);
   } catch (error) {
-    console.error('Gagal mengambil data tabel CIP:', error);
-    res.status(500).json({ error: 'Gagal mengambil data tabel CIP' });
+    console.error('Gagal mengambil data dari view stackedbar:', error);
+    res.status(500).json({ error: 'Gagal mengambil data tabel stackedbar' });
   }
 });
 

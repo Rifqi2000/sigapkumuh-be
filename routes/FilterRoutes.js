@@ -4,7 +4,8 @@ const router = express.Router();
 
 router.get('/filter-options', async (req, res) => {
   try {
-    const result = await pool.query(`
+    // 1) Ambil dasar filter (tahun, wilayah, dst.) dari chartkiriatas
+    const baseResult = await pool.query(`
       SELECT DISTINCT 
         nama_kab, nama_kec, nama_kel, nama_rw, tahun_cap, tahun_cip
       FROM sigapkumuh.chartkiriatas
@@ -14,9 +15,21 @@ router.get('/filter-options', async (req, res) => {
         AND nama_rw IS NOT NULL
     `);
 
-    const rows = result.rows;
+    // 2) Ambil daftar kegiatan dari tabel kegiatan
+    //    Gunakan nama_kegiatan (kolom tanpa spasi). 
+    //    Jika kolom kamu benar-benar bernama "nama kegiatan" (pakai spasi),
+    //    ganti query di bawah menjadi:
+    //    SELECT DISTINCT TRIM("nama kegiatan") AS nama_kegiatan FROM sigapkumuh.kegiatan ...
+    const kegiatanResult = await pool.query(`
+      SELECT DISTINCT TRIM(nama_kegiatan) AS nama_kegiatan
+      FROM sigapkumuh.kegiatan
+      WHERE nama_kegiatan IS NOT NULL
+        AND TRIM(nama_kegiatan) <> ''
+      ORDER BY 1
+    `);
 
-    // Ambil nilai unik tahun_cap dan tahun_cip
+    const rows = baseResult.rows;
+
     const tahunCapSet = new Set();
     const tahunCipSet = new Set();
     const wilayahSet = new Set();
@@ -25,10 +38,12 @@ router.get('/filter-options', async (req, res) => {
     const rwSet = new Set();
 
     const cleanWilayah = (str) =>
-      str.replace(/^Kota Adm\. /, '')
-         .replace(/^Kab\. Adm\. /, '')
-         .trim();
+      str
+        .replace(/^Kota Adm\. /, '')
+        .replace(/^Kab\. Adm\. /, '')
+        .trim();
 
+    // Data untuk dependensi antar filter (di frontend)
     const data = rows.map(r => {
       const wilayah = cleanWilayah(r.nama_kab);
       const kecamatan = r.nama_kec;
@@ -50,20 +65,30 @@ router.get('/filter-options', async (req, res) => {
         kecamatan,
         kelurahan,
         rw
+        // Jika nanti butuh dependensi berdasarkan kegiatan,
+        // tambahkan kolom di chartkiriatas dan ikutkan di sini:
+        // , kegiatan: r.nama_kegiatan
       };
     });
+
+    // Susun list kegiatan
+    const kegiatan = kegiatanResult.rows
+      .map(k => k.nama_kegiatan)
+      .filter(Boolean) // safety
+      .sort((a, b) => a.localeCompare(b, 'id'));
 
     res.json({
       tahun_cap: Array.from(tahunCapSet).sort(),
       tahun_cip: Array.from(tahunCipSet).sort(),
-      wilayah: Array.from(wilayahSet).sort(),
-      kecamatan: Array.from(kecamatanSet).sort(),
-      kelurahan: Array.from(kelurahanSet).sort(),
+      wilayah: Array.from(wilayahSet).sort((a, b) => a.localeCompare(b, 'id')),
+      kecamatan: Array.from(kecamatanSet).sort((a, b) => a.localeCompare(b, 'id')),
+      kelurahan: Array.from(kelurahanSet).sort((a, b) => a.localeCompare(b, 'id')),
       rw: Array.from(rwSet).sort(),
-      data, // digunakan untuk dependensi antar filter di frontend
+      kegiatan, // ⬅️ filter baru dari tabel kegiatan
+      data      // tetap dipakai untuk dependensi antar filter di frontend
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error /filter-options:', err);
     res.status(500).json({ error: 'Failed to fetch filter options' });
   }
 });

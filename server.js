@@ -5,7 +5,6 @@ const app = express();
 const heroRoutes = require('./routes/HeroSectionRoutes');
 const filterRoutes = require('./routes/FilterRoutes');
 const barchartRoutes = require('./routes/BarChartRoutes');
-const donutchartcapRoutes = require('./routes/DonutChartCapRoutes');
 const donutchartcipRoutes = require('./routes/DonutChartCipRoutes');
 const tableCipRoute = require('./routes/TableCIPRoutes');
 
@@ -16,7 +15,6 @@ app.use(express.json());
 app.use('/api/data', heroRoutes);    
 app.use('/api/data', filterRoutes);
 app.use('/api/data', barchartRoutes);   
-app.use('/api/data', donutchartcapRoutes);
 app.use('/api/data', donutchartcipRoutes);
 app.use('/api/data', tableCipRoute);
 
