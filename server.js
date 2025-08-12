@@ -18,7 +18,7 @@ app.use('/api/data', barchartRoutes);
 app.use('/api/data', donutchartcipRoutes);
 app.use('/api/data', tableCipRoute);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5500;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
