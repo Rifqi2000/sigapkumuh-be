@@ -50,7 +50,8 @@ router.get('/table-cip', async (req, res) => {
         satuan,
         ROUND(total_volume_cip::numeric, 2) AS volume,
         total_kegiatan_cip,
-        ROUND(total_anggaran_cip::numeric, 2) AS anggaran
+        ROUND(total_anggaran_cip::numeric, 2) AS anggaran,
+        skpd
       FROM sigapkumuh.stackedbar
       ${whereClause}
       ORDER BY nama_kab, nama_kec, nama_kel, nama_rw;
